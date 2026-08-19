@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>World Explorer v0.5</title>
+<style>
+*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#63cde7;font-family:system-ui,-apple-system,sans-serif;touch-action:none}
+#game{position:fixed;inset:0;overflow:hidden;background:linear-gradient(#61d0ea 0 52%,#168faf 52% 100%)}
+#world{position:absolute;inset:0;overflow:hidden;transition:filter .4s}
+#sea{position:absolute;inset:52% 0 0;background:repeating-linear-gradient(0deg,#147f9e 0 12px,#1689a7 12px 24px)}
+#island{position:absolute;width:82vw;height:82vw;max-width:650px;max-height:650px;left:50%;top:54%;transform:translate(-50%,-50%);border-radius:46% 54% 48% 52%;background:#4fa84f;box-shadow:inset 0 -35px 0 #d7bd70,0 20px 50px #0005}
+#island:before{content:"";position:absolute;inset:9%;border-radius:inherit;background:radial-gradient(circle at 25% 25%,#6bc75b 0 4%,transparent 4.5%),radial-gradient(circle at 70% 30%,#318b49 0 4%,transparent 4.5%),radial-gradient(circle at 35% 70%,#2e8245 0 5%,transparent 5.5%),radial-gradient(circle at 75% 75%,#6bc75b 0 4%,transparent 4.5%);opacity:.7}
+#islandTheme{position:absolute;inset:0;border-radius:inherit;pointer-events:none}
+.obj{position:absolute;transform:translate(-50%,-50%);filter:drop-shadow(0 5px 2px #0004);user-select:none}
+.tree{font-size:45px}.rock{font-size:34px}.ore{font-size:32px}.enemy{font-size:43px;transition:transform .15s}.player{font-size:50px;z-index:8;transition:transform .05s}.ship{font-size:70px;z-index:6}
+#hud{position:fixed;top:10px;left:10px;right:10px;display:flex;justify-content:space-between;gap:8px;pointer-events:none;color:white;font-weight:900;text-shadow:0 2px 4px #000;z-index:20}.card{background:#071b2dd9;border:1px solid #fff4;border-radius:13px;padding:7px 10px}
+#islandName{position:fixed;top:62px;left:50%;transform:translateX(-50%);padding:7px 13px;border-radius:13px;background:#071b2dd9;color:#fff;font-weight:900;z-index:20;white-space:nowrap}
+#joy{position:fixed;left:18px;bottom:95px;width:125px;height:125px;border-radius:50%;background:#ffffff18;border:2px solid #ffffff66;z-index:25}#stick{position:absolute;left:35px;top:35px;width:51px;height:51px;border-radius:50%;background:#ffffff70;border:2px solid white}
+.btn{position:fixed;border:0;border-radius:14px;color:#fff;font-weight:900;z-index:25;box-shadow:0 4px 0 #0005}.btn:active{transform:translateY(2px)}
+#attack{right:20px;bottom:31px;width:78px;height:78px;border-radius:50%;background:#f0ad38;color:#241707;font-size:26px}
+#bag{right:20px;bottom:250px;width:82px;height:40px;background:#487a9b}#build{right:20px;bottom:202px;width:82px;height:40px;background:#6855bb}#map{right:20px;bottom:154px;width:82px;height:40px;background:#3b9870}
+#interact{right:20px;bottom:105px;width:132px;height:42px;background:#299ec8;display:none}
+#hotbar{position:fixed;left:50%;bottom:9px;transform:translateX(-50%);display:flex;gap:4px;z-index:23}.hot{width:55px;height:51px;border:2px solid #ffffff44;border-radius:9px;background:#071b2dd9;color:white;font-size:10px}.hot b{display:block;font-size:18px}.selected{border-color:#ffd34e}
+#panel{position:fixed;left:50%;bottom:10px;transform:translateX(-50%);width:min(92vw,430px);max-height:55vh;overflow:auto;background:#071b2df4;color:white;border:1px solid #fff4;border-radius:16px;padding:13px;z-index:40;display:none}.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:7px}.slot{background:#fff1;border:1px solid #fff2;border-radius:10px;padding:9px;text-align:center}.slot b{display:block;font-size:22px}.buildgrid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}.buildgrid button,.islandBtn{padding:11px;border:0;border-radius:10px;font-weight:900}.close{width:100%;padding:10px;border:0;border-radius:10px;background:#477b99;color:#fff;font-weight:900}
+#msg{position:fixed;left:50%;bottom:170px;transform:translateX(-50%);background:#071b2ded;color:#fff;border-radius:13px;padding:8px 13px;opacity:0;transition:.2s;z-index:35;font-weight:900;text-align:center;max-width:84%}
+#start{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:linear-gradient(#1f91b0,#071622);color:#fff;text-align:center;z-index:100}.startbox{width:min(90vw,390px);padding:24px}.startbox h1{font-size:38px;margin:0 0 8px}.startbox p{line-height:1.45}.startbox button{padding:16px 30px;border:0;border-radius:15px;background:#f2ae38;font-weight:1000;font-size:18px}
+</style>
+</head>
+<body>
+<div id="game">
+ <div id="world"><div id="sea"></div><div id="island"><div id="islandTheme"></div></div></div>
+</div>
+<div id="hud"><div class="card">❤️ <span id="hp">100</span> &nbsp;🪙 <span id="gold">0</span></div><div class="card">⭐ <span id="xp">0</span> &nbsp;🪵 <span id="wood">0</span> 🪨 <span id="stone">0</span></div></div>
+<div id="islandName">🌴 Verdant Haven</div>
+<div id="joy"><div id="stick"></div></div>
+<button id="attack" class="btn">⚔️</button><button id="bag" class="btn">🎒 BAG</button><button id="build" class="btn">🏠 BUILD</button><button id="map" class="btn">🗺️ MAP</button><button id="interact" class="btn"></button>
+<div id="hotbar"></div><div id="msg"></div><div id="panel"></div>
+<div id="start"><div class="startbox"><h1>🏴‍☠️ World Explorer</h1><h2>v0.5 — Stable Expansion</h2><p>Four islands • 20 creatures • gathering • loot • inventory • hotbar • building • sailing</p><button id="startBtn">SET SAIL</button></div></div>
+
+<script>
+(function(){
+"use strict";
+var islands=[
+ {name:"🌴 Verdant Haven",bg:"#4fa84f",sand:"#d7bd70",creatures:[["🦀","Coconut Crab","flee"],["🐗","Jungle Boar","flee"],["🦖","Emerald Raptor","attack"],["🐍","Vine Serpent","flee"],["👻","Nightmare Doll","horror"]]},
+ {name:"🌋 Emberfang",bg:"#75483d",sand:"#b96f48",creatures:[["🦖","Rexling","attack"],["🦕","Triceratops","flee"],["🦖","Ash Raptor","attack"],["🦎","Lava Gecko","flee"],["💀","Bone Tyrant","horror"]]},
+ {name:"🌑 Dread Hollow",bg:"#303845",sand:"#5a5d61",creatures:[["🐺","Grave Hound","attack"],["👹","Ghoul Ape","attack"],["🦇","Mimic Bat","flee"],["🐍","Blood Snake","attack"],["👤","The Hollow Man","horror"]]},
+ {name:"⚙️ Ironfang",bg:"#56636d",sand:"#82796d",creatures:[["🐍","Steel Cobra","attack"],["🦖","Cyber Raptor","attack"],["🦂","Chrome Scorpion","flee"],["🐺","Mecha Wolf","attack"],["🤖","Titan-01","horror"]]}
+];
+var idx=0,hp=100,gold=0,xp=0,inv={wood:0,stone:0,fiber:0,ore:0,food:0},selected=0;
+var player={x:50,y:55,alive:true},ship={x:23,y:63,visible:true},objects=[],built=[],started=false,inShip=false,joyX=0,joyY=0,last=0;
+var hot=[["🪵","wood"],["🪨","stone"],["🌿","fiber"],["⚙️","ore"],["🍎","food"]];
+var $=function(id){return document.getElementById(id)}, island=$("island"), world=$("world"), panel=$("panel"), msg=$("msg");
+
+function show(t){msg.textContent=t;msg.style.opacity=1;clearTimeout(show.t);show.t=setTimeout(function(){msg.style.opacity=0},1800)}
+function hud(){$("hp").textContent=Math.round(hp);$("gold").textContent=gold;$("xp").textContent=xp;$("wood").textContent=inv.wood;$("stone").textContent=inv.stone}
+function hotbar(){var s="";for(var i=0;i<hot.length;i++)s+='<button class="hot '+(i===selected?"selected":"")+'" data-i="'+i+'"><b>'+hot[i][0]+'</b>'+hot[i][1]+'<br>'+inv[hot[i][1]]+"</button>";$("hotbar").innerHTML=s;Array.prototype.forEach.call(document.querySelectorAll(".hot"),function(b){b.onclick=function(){selected=+b.dataset.i;hotbar()}})}
+function addObj(type,emoji,name,x,y,behaviour){var e=document.createElement("div");e.className="obj "+type;e.textContent=emoji;e.style.left=x+"%";e.style.top=y+"%";island.appendChild(e);var o={el:e,type:type,emoji:emoji,name:name,x:x,y:y,hp:40,behaviour:behaviour,homeX:x,homeY:y,state:"idle",cool:0};objects.push(o);e.onclick=function(ev){ev.stopPropagation();if(type==="resource")gather(o);else if(type==="enemy")hit(o)};return o}
+function clear(){Array.prototype.slice.call(island.querySelectorAll(".obj")).forEach(function(e){e.remove()});objects=[];built=[]}
+function buildIsland(){
+ clear(); island.style.background=islands[idx].bg; island.style.boxShadow="inset 0 -35px 0 "+islands[idx].sand+",0 20px 50px #0005";
+ $("islandName").textContent=islands[idx].name;
+ for(var i=0;i<8;i++){var x=12+(i*17)%76,y=15+((i*31)%65);addObj("tree","🌴","Tree",x,y,"gather")}
+ for(var j=0;j<6;j++){var rx=14+(j*27)%72,ry=20+((j*23)%58);addObj("resource","🪨","Stone",rx,ry,"gather")}
+ if(idx===3)for(var k=0;k<5;k++)addObj("resource","⚙️","Ore",20+k*15,24+(k%2)*38,"gather");
+ islands[idx].creatures.forEach(function(c,n){addObj("enemy",c[0],c[1],18+n*15,32+(n%2)*30,c[2])});
+ var se=document.createElement("div");se.className="obj ship";se.textContent="⛵";se.style.left=ship.x+"%";se.style.top=ship.y+"%";island.appendChild(se);ship.el=se;se.onclick=function(){board()};
+ player.x=50;player.y=55;drawPlayer();hud();hotbar();
+}
+function drawPlayer(){var e=$("player");if(!e){e=document.createElement("div");e.id="player";e.className="obj player";e.textContent="🏴‍☠️";island.appendChild(e)}e.style.left=player.x+"%";e.style.top=player.y+"%";e.style.transform="translate(-50%,-50%) scaleX("+(joyX<-.1?-1:1)+")";e.style.display=player.alive&&!inShip?"block":"none"}
+function distance(a,b){var dx=a.x-b.x,dy=a.y-b.y;return Math.sqrt(dx*dx+dy*dy)}
+function nearestResource(){var best=null,d=8;objects.forEach(function(o){if(o.type==="tree"||o.type==="resource"){var q=distance(player,o);if(q<d){d=q;best=o}}});return best}
+function nearestEnemy(){var best=null,d=9;objects.forEach(function(o){if(o.type==="enemy"&&o.hp>0){var q=distance(player,o);if(q<d){d=q;best=o}}});return best}
+function gather(o){if(!started||inShip)return;var gain=o.type==="tree"?3:2;var key=o.name==="Ore"?"ore":o.type==="tree"?"wood":"stone";inv[key]+=gain;xp+=5;show("+"+gain+" "+key);o.el.remove();objects.splice(objects.indexOf(o),1);hud();hotbar()}
+function hit(o){if(!started||inShip)return;if(distance(player,o)>10){show("Get closer.");return}o.state="attack";o.hp-=20;if(o.hp<=0){o.el.remove();objects.splice(objects.indexOf(o),1);gold+=15;xp+=20;show("💥 "+o.emoji+" "+o.name+" defeated! +15 gold");hud()}else show("⚔️ "+o.name+" is angry!")}
+function attack(){var e=nearestEnemy();if(e)hit(e);else{var r=nearestResource();if(r)gather(r);else show("Nothing nearby.")}}
+function board(){if(!started)return;if(distance(player,ship)>13){show("Walk closer to the ship.");return}inShip=!inShip;show(inShip?"⛵ Aboard! Use the joystick to sail.":"🏝️ Back on the island.");drawPlayer()}
+function updateInteract(){var r=nearestResource(),e=nearestEnemy();if(inShip){$("interact").style.display="block";$("interact").textContent="🏝️ LEAVE SHIP";$("interact").onclick=board;return}if(distance(player,ship)<13){$("interact").style.display="block";$("interact").textContent="⛵ BOARD";$("interact").onclick=board;return}if(r){$("interact").style.display="block";$("interact").textContent="⛏️ GATHER";$("interact").onclick=function(){gather(r)};return}if(e){$("interact").style.display="block";$("interact").textContent="⚔️ ATTACK";$("interact").onclick=attack;return}$("interact").style.display="none"}
+function move(dt){var x=joyX,y=joyY;if(!x&&!y)return;var speed=inShip?15:11;player.x+=x*speed*dt;player.y+=y*speed*dt;player.x=Math.max(7,Math.min(93,player.x));player.y=Math.max(9,Math.min(89,player.y));if(inShip){ship.x=player.x;ship.y=player.y;ship.el.style.left=ship.x+"%";ship.el.style.top=ship.y+"%"}drawPlayer()}
+function ai(dt){objects.forEach(function(o){if(o.type!=="enemy"||o.hp<=0||inShip)return;var d=distance(player,o);o.cool-=dt;if(d<11){if(o.behaviour==="flee"){o.x+=(o.x-player.x)/Math.max(d,1)*9*dt;o.y+=(o.y-player.y)/Math.max(d,1)*9*dt;o.state="flee"}else if(o.behaviour==="attack"||o.behaviour==="horror"){if(d<7){o.x+=(player.x-o.x)/Math.max(d,1)*3*dt;o.y+=(player.y-o.y)/Math.max(d,1)*3*dt}if(d<5&&o.cool<=0){hp-=8;o.cool=1;show("💢 "+o.name+" attacked you!");hud()}}}else{o.x+=(o.homeX-o.x)*dt*.15;o.y+=(o.homeY-o.y)*dt*.15}o.x=Math.max(5,Math.min(95,o.x));o.y=Math.max(8,Math.min(90,o.y));o.el.style.left=o.x+"%";o.el.style.top=o.y+"%"})}
+function inventory(){panel.innerHTML="<h3>🎒 Inventory</h3><div class='grid'>"+[["🪵","Wood","wood"],["🪨","Stone","stone"],["🌿","Fiber","fiber"],["⚙️","Ore","ore"],["🍎","Food","food"],["🪙","Gold","gold"]].map(function(a){return "<div class='slot'><b>"+a[0]+"</b>"+a[1]+"<br>"+(a[2]==="gold"?gold:inv[a[2]])+"</div>"}).join("")+"</div><br><button class='close' onclick='closePanel()'>CLOSE</button>";panel.style.display="block"}
+function buildMenu(){panel.innerHTML="<h3>🏠 Build Menu</h3><p>Gather wood, then build your starter house.</p><div class='buildgrid'><button onclick='makeBuild(\"floor\")'>🟫 FLOOR<br>2 🪵</button><button onclick='makeBuild(\"wall\")'>🧱 WALL<br>3 🪵</button><button onclick='makeBuild(\"roof\")'>🔺 ROOF<br>3 🪵</button><button onclick='makeBuild(\"door\")'>🚪 DOOR<br>4 🪵</button></div><br><button class='close' onclick='closePanel()'>CLOSE</button>";panel.style.display="block"}
+function makeBuild(type){var cost={floor:2,wall:3,roof:3,door:4}[type];if(inv.wood<cost){show("❌ Need "+cost+" wood.");return}inv.wood-=cost;var e=document.createElement("div");e.className="obj";e.textContent={floor:"🟫",wall:"🧱",roof:"🔺",door:"🚪"}[type];e.style.left=(player.x+((built.length%3)-1)*7)+"%";e.style.top=(player.y-10-Math.floor(built.length/3)*6)+"%";e.style.fontSize=type==="wall"?"40px":"35px";island.appendChild(e);built.push(e);show("🏠 Built "+type);hud();hotbar();panel.style.display="none"}
+function maps(){panel.innerHTML="<h3>🗺️ Islands</h3>"+islands.map(function(a,i){return "<button class='islandBtn' style='display:block;width:100%;margin:5px 0;background:"+a.bg+";color:white' onclick='travel("+i+")'>"+a.name+"<br><small>"+a.creatures.map(function(c){return c[1]}).join(" • ")+"</small></button>"}).join("")+"<br><button class='close' onclick='closePanel()'>CLOSE</button>";panel.style.display="block"}
+window.closePanel=function(){panel.style.display="none"};window.makeBuild=makeBuild;window.travel=function(i){idx=i;inShip=false;buildIsland();panel.style.display="none";show("🏝️ Arrived at "+islands[i].name)};
+$("bag").onclick=inventory;$("build").onclick=buildMenu;$("map").onclick=maps;$("attack").onclick=attack;$("startBtn").onclick=function(){started=true;$("start").style.display="none";show("🏴‍☠️ Explore, gather, fight and build!");drawPlayer()};
+var joy=$("joy"),stick=$("stick"),joyId=null;
+function joyMove(e){var r=joy.getBoundingClientRect(),dx=e.clientX-r.left-r.width/2,dy=e.clientY-r.top-r.height/2,m=42,l=Math.hypot(dx,dy)||1;if(l>m){dx*=m/l;dy*=m/l}joyX=dx/m;joyY=dy/m;stick.style.left=(35+dx)+"px";stick.style.top=(35+dy)+"px"}
+joy.addEventListener("pointerdown",function(e){joyId=e.pointerId;joy.setPointerCapture(joyId);joyMove(e)});joy.addEventListener("pointermove",function(e){if(e.pointerId===joyId)joyMove(e)});joy.addEventListener("pointerup",function(e){if(e.pointerId===joyId){joyId=null;joyX=joyY=0;stick.style.left="35px";stick.style.top="35px"}});
+document.addEventListener("keydown",function(e){var k=e.key.toLowerCase();if(k==="w")joyY=-1;if(k==="s")joyY=1;if(k==="a")joyX=-1;if(k==="d")joyX=1;if(k===" "){e.preventDefault();attack()}});document.addEventListener("keyup",function(e){var k=e.key.toLowerCase();if(k==="w"||k==="s")joyY=0;if(k==="a"||k==="d")joyX=0});
+function loop(t){var dt=Math.min(.05,(t-last)/1000||0);last=t;if(started){move(dt);ai(dt);updateInteract();if(hp<=0){hp=100;gold=Math.max(0,gold-15);player.x=50;player.y=55;inShip=false;show("☠️ Knocked out! -15 gold");hud();drawPlayer()}}requestAnimationFrame(loop)}buildIsland();hud();hotbar();requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>
