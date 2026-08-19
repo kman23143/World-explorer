@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>Islands Beyond — 3D Prototype</title>
+<style>
+html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#071521;font-family:system-ui,-apple-system,sans-serif;touch-action:none}
+#game{position:fixed;inset:0}canvas{display:block}
+#hud{position:fixed;top:12px;left:12px;right:12px;display:flex;justify-content:space-between;pointer-events:none;color:#fff;text-shadow:0 2px 4px #000;font-weight:800}
+.card{background:#071a2acc;border:1px solid #ffffff33;border-radius:14px;padding:8px 11px;backdrop-filter:blur(5px)}
+#help{position:fixed;top:70px;left:50%;transform:translateX(-50%);color:white;background:#071a2acc;border:1px solid #ffffff33;border-radius:14px;padding:8px 12px;text-align:center;font-size:12px;pointer-events:none}
+#joy{position:fixed;left:24px;bottom:28px;width:120px;height:120px;border-radius:50%;background:#ffffff18;border:2px solid #ffffff55}
+#stick{position:absolute;left:35px;top:35px;width:50px;height:50px;border-radius:50%;background:#ffffff55;border:2px solid #fff8}
+#attack{position:fixed;right:28px;bottom:42px;width:82px;height:82px;border:0;border-radius:50%;background:#e9a83b;color:#20170a;font-size:30px;font-weight:900;box-shadow:0 5px #8b5d17}
+#attack:active{transform:translateY(3px);box-shadow:0 2px #8b5d17}
+#msg{position:fixed;left:50%;bottom:155px;transform:translateX(-50%);color:white;background:#071a2acc;border-radius:14px;padding:9px 14px;opacity:0;transition:.25s;pointer-events:none;text-align:center;max-width:80%}
+#start{position:fixed;inset:0;background:linear-gradient(#0b5572,#061421);display:flex;align-items:center;justify-content:center;color:#fff;text-align:center}
+.startbox{max-width:330px;padding:28px}.startbox h1{font-size:34px;margin:0 0 8px}.startbox p{opacity:.8;line-height:1.5}
+#start button{padding:15px 25px;border:0;border-radius:14px;background:#e9a83b;font-weight:900;font-size:17px}
+</style>
+</head>
+<body>
+<div id="game"></div>
+<div id="hud"><div class="card">❤️ <span id="hp">100</span></div><div class="card">🪙 <span id="gold">0</span> &nbsp; ⭐ <span id="xp">0</span></div></div>
+<div id="help">Move with the left stick • Drag anywhere else to look • ⚔️ attack</div>
+<div id="joy"><div id="stick"></div></div>
+<button id="attack">⚔️</button>
+<div id="msg"></div>
+<div id="start"><div class="startbox"><h1>🏴‍☠️ Islands Beyond</h1><p><b>3D Prototype v0.2</b><br>Third-person anime-style island prototype.<br><br>Walk around, explore, collect coins and fight your first island creature.</p><button id="startBtn">SET SAIL</button></div></div>
+
+<script type="module">
+import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js';
+
+const scene=new THREE.Scene();
+scene.background=new THREE.Color(0x76d2e8);
+scene.fog=new THREE.Fog(0x76d2e8,35,90);
+
+const camera=new THREE.PerspectiveCamera(65,innerWidth/innerHeight,.1,150);
+const renderer=new THREE.WebGLRenderer({antialias:true});
+renderer.setPixelRatio(Math.min(devicePixelRatio,1.6));
+renderer.setSize(innerWidth,innerHeight);
+renderer.shadowMap.enabled=true;
+renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+document.getElementById('game').appendChild(renderer.domElement);
+
+scene.add(new THREE.HemisphereLight(0xbdefff,0x38502f,2.2));
+const sun=new THREE.DirectionalLight(0xffffff,2.4);sun.position.set(-20,35,15);sun.castShadow=true;scene.add(sun);
+
+const mat=(c)=>new THREE.MeshStandardMaterial({color:c,roughness:.9});
+const ground=new THREE.Mesh(new THREE.CylinderGeometry(32,38,1.4,32),mat(0x4caa55));
+ground.position.y=-.7;ground.receiveShadow=true;scene.add(ground);
+
+const sand=new THREE.Mesh(new THREE.CylinderGeometry(31.5,33,0.45,32),mat(0xe8d28b));
+sand.position.y=-.02;scene.add(sand);
+
+function box(w,h,d,c,x,y,z){
+ const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),mat(c));m.position.set(x,y,z);m.castShadow=true;m.receiveShadow=true;scene.add(m);return m;
+}
+function tree(x,z,scale=1){
+ const trunk=new THREE.Mesh(new THREE.CylinderGeometry(.32,.45,3,8),mat(0x75462b));trunk.position.set(x,1.5,z);trunk.castShadow=true;scene.add(trunk);
+ const crown=new THREE.Mesh(new THREE.SphereGeometry(1.7,8,6),mat(0x238447));crown.position.set(x,3.5,z);crown.scale.set(1.2,1,1.2);crown.castShadow=true;scene.add(crown);
+}
+for(const p of [[-8,-7,1],[8,-9,1.2],[-13,5,.9],[13,4,1.1],[-3,11,.8],[10,12,.9]])tree(p[0],p[1],p[2]);
+
+// ship
+const ship=new THREE.Group();ship.position.set(-17,.5,11);scene.add(ship);
+const hull=new THREE.Mesh(new THREE.BoxGeometry(6,1.3,2.5),mat(0x63391f));hull.scale.z=.85;hull.castShadow=true;ship.add(hull);
+const mast=new THREE.Mesh(new THREE.CylinderGeometry(.16,.22,6,8),mat(0x5a351d));mast.position.y=3;ship.add(mast);
+const sail=new THREE.Mesh(new THREE.PlaneGeometry(3.2,3.5),new THREE.MeshStandardMaterial({color:0xf5e8c8,side:THREE.DoubleSide}));sail.position.set(1,3.2,0);sail.rotation.y=Math.PI/2;ship.add(sail);
+
+// dock
+for(let i=-2;i<=2;i++)box(2.5,.3,.7,0x8d5b30,-17+i*2.6,.1,7);
+
+// player group: simple anime pirate
+const player=new THREE.Group();player.position.set(-13,.3,9);scene.add(player);
+const body=new THREE.Mesh(new THREE.CapsuleGeometry(.48,.9,5,10),mat(0x2464b0));body.position.y=1.05;body.castShadow=true;player.add(body);
+const head=new THREE.Mesh(new THREE.SphereGeometry(.46,12,10),mat(0xffc28e));head.position.y=2.05;head.castShadow=true;player.add(head);
+const hat=new THREE.Mesh(new THREE.CylinderGeometry(.7,.55,.22,16),mat(0x20252b));hat.position.y=2.5;hat.castShadow=true;player.add(hat);
+const hatTop=new THREE.Mesh(new THREE.CylinderGeometry(.43,.5,.5,16),mat(0x20252b));hatTop.position.y=2.75;hatTop.castShadow=true;player.add(hatTop);
+const sword=new THREE.Mesh(new THREE.BoxGeometry(.12,.95,.12),mat(0xcbd5dd));sword.position.set(.62,1.15,.25);sword.rotation.z=-.35;sword.castShadow=true;player.add(sword);
+
+// creature
+const creature=new THREE.Group();creature.position.set(5,.35,2);scene.add(creature);
+const cbody=new THREE.Mesh(new THREE.SphereGeometry(1,12,8),mat(0x8a4bd3));cbody.scale.set(1.25,.8,1);cbody.castShadow=true;creature.add(cbody);
+const eyeMat=mat(0xffffff), pupil=mat(0x111111);
+for(const x of [-.38,.38]){let e=new THREE.Mesh(new THREE.SphereGeometry(.2,8,6),eyeMat);e.position.set(x,.35,.82);creature.add(e);let p=new THREE.Mesh(new THREE.SphereGeometry(.09,8,6),pupil);p.position.set(x,.35,1.0);creature.add(p)}
+const horn=mat(0xffd45a);for(const x of [-.65,.65]){let h=new THREE.Mesh(new THREE.ConeGeometry(.18,.65,6),horn);h.position.set(x,.9,0);h.rotation.z=x>0?-.45:.45;creature.add(h)}
+let creatureHP=50, dead=false;
+
+function coin(x,z){
+ const m=new THREE.Mesh(new THREE.CylinderGeometry(.3,.3,.12,16),mat(0xffc83d));m.rotation.x=Math.PI/2;m.position.set(x,.35,z);m.userData.coin=true;m.castShadow=true;scene.add(m);
+}
+[[2,-4],[11,-2],[8,9],[-5,-12],[-19,-3]].forEach(p=>coin(...p));
+
+let hp=100,gold=0,xp=0,moveX=0,moveY=0,lookYaw=0,lookPitch=.28,started=false;
+const keys={};
+addEventListener('keydown',e=>keys[e.key.toLowerCase()]=true);
+addEventListener('keyup',e=>keys[e.key.toLowerCase()]=false);
+
+const joy=document.getElementById('joy'),stick=document.getElementById('stick');let joyId=null;
+joy.addEventListener('pointerdown',e=>{joyId=e.pointerId;joy.setPointerCapture(joyId);joyMove(e)});
+joy.addEventListener('pointermove',e=>{if(e.pointerId===joyId)joyMove(e)});
+joy.addEventListener('pointerup',e=>{if(e.pointerId===joyId){joyId=null;moveX=moveY=0;stick.style.left='35px';stick.style.top='35px'}});
+function joyMove(e){const r=joy.getBoundingClientRect(),cx=r.left+r.width/2,cy=r.top+r.height/2;let dx=e.clientX-cx,dy=e.clientY-cy;const max=42;const l=Math.hypot(dx,dy)||1;if(l>max){dx*=max/l;dy*=max/l}moveX=dx/max;moveY=dy/max;stick.style.left=(35+dx)+'px';stick.style.top=(35+dy)+'px'}
+
+let lookId=null,lastX=0,lastY=0;
+renderer.domElement.addEventListener('pointerdown',e=>{if(e.clientX<160||e.clientY>innerHeight-170)return;lookId=e.pointerId;lastX=e.clientX;lastY=e.clientY});
+renderer.domElement.addEventListener('pointermove',e=>{if(e.pointerId!==lookId)return;lookYaw-= (e.clientX-lastX)*.006;lookPitch-= (e.clientY-lastY)*.004;lookPitch=Math.max(-.1,Math.min(.65,lookPitch));lastX=e.clientX;lastY=e.clientY});
+renderer.domElement.addEventListener('pointerup',e=>{if(e.pointerId===lookId)lookId=null});
+
+function attack(){
+ if(!started||dead)return;
+ const d=player.position.distanceTo(creature.position);
+ if(d<3.2&&!dead){creatureHP-=20;msg(creatureHP>0?`⚔️ Hit! Creature HP: ${creatureHP}/50`:'💥 Defeated! +25 gold, +30 XP');if(creatureHP<=0){dead=true;creature.visible=false;gold+=25;xp+=30;renderHud();setTimeout(()=>{creatureHP=50;dead=false;creature.visible=true;creature.position.set((Math.random()*18)-9,.35,(Math.random()*18)-9)},1800)}}
+ else msg('⚔️ Too far away!');
+}
+document.getElementById('attack').onclick=attack;
+
+function msg(t){const e=document.getElementById('msg');e.textContent=t;e.style.opacity=1;clearTimeout(window.mt);window.mt=setTimeout(()=>e.style.opacity=0,1800)}
+function renderHud(){document.getElementById('hp').textContent=Math.max(0,Math.round(hp));document.getElementById('gold').textContent=gold;document.getElementById('xp').textContent=xp}
+
+function update(dt){
+ if(!started)return;
+ let kx=(keys.d?1:0)-(keys.a?1:0),ky=(keys.s?1:0)-(keys.w?1:0);
+ let x=Math.abs(moveX)>0.05?moveX:kx,y=Math.abs(moveY)>0.05?moveY:ky;
+ const len=Math.hypot(x,y);if(len>1){x/=len;y/=len}
+ const forward=new THREE.Vector3(-Math.sin(lookYaw),0,-Math.cos(lookYaw));
+ const right=new THREE.Vector3(Math.cos(lookYaw),0,-Math.sin(lookYaw));
+ const dir=forward.multiplyScalar(-y).add(right.multiplyScalar(x));
+ if(dir.lengthSq()>.001){dir.normalize();player.position.addScaledVector(dir,dt*6);player.rotation.y=Math.atan2(dir.x,dir.z)}
+ player.position.x=THREE.MathUtils.clamp(player.position.x,-28,28);player.position.z=THREE.MathUtils.clamp(player.position.z,-28,28);
+ // collect coins
+ scene.traverse(o=>{if(o.userData.coin&&o.visible&&o.position.distanceTo(player.position)<1.2){o.visible=false;gold+=10;xp+=5;renderHud();msg('🪙 +10 gold')}})
+ // creature bumps
+ if(!dead&&player.position.distanceTo(creature.position)<2.0){hp-=dt*12;if(hp<=0){hp=100;gold=Math.max(0,gold-10);player.position.set(-13,.3,9);msg('☠️ Knocked out! -10 gold')}renderHud()}
+ // camera follows
+ const target=player.position.clone();target.y+=1.3;
+ const camDist=6.8;
+ const offset=new THREE.Vector3(Math.sin(lookYaw)*camDist,2.8+lookPitch*3,Math.cos(lookYaw)*camDist);
+ camera.position.lerp(target.clone().add(offset),1-Math.pow(.001,dt));
+ camera.lookAt(target);
+}
+
+let last=performance.now();
+function loop(now){const dt=Math.min((now-last)/1000,.05);last=now;update(dt);renderer.render(scene,camera);requestAnimationFrame(loop)}
+requestAnimationFrame(loop);
+
+document.getElementById('startBtn').onclick=()=>{started=true;document.getElementById('start').style.display='none';msg('🏝️ Welcome to your first island, captain!');};
+addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight)});
+renderHud();
+</script>
+</body>
+</html>
